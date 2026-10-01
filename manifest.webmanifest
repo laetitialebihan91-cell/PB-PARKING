@@ -1,0 +1,10 @@
+{
+  "name": "Veille Parking — Intermarché Gif-sur-Yvette",
+  "short_name": "Veille Parking",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#eceff2",
+  "theme_color": "#1b2129",
+  "icons": []
+}

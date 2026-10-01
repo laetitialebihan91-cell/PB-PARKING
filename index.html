@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1b2129">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Veille Parking">
+<link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+<!-- APP START -->
+<title>Veille Parking Gif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout : appli mobile une colonne — en-tête collant, trois onglets en barre basse, cartes réservées aux plaques. */
+:root {
+  --bg: #eceff2;
+  --surface: #ffffff;
+  --sunk: #e2e6ea;
+  --ink: #1b2129;
+  --muted: #5b6672;
+  --line: #d3d9df;
+  --accent: #f2b705;
+  --accent-ink: #1b2129;
+  --eu: #1f3d99;
+  --plate: #ffffff;
+  --plate-ink: #111418;
+  --warn: #b4410a;
+  --warn-bg: #fdebdc;
+  --amber: #8a6200;
+  --amber-bg: #fdf3d1;
+  --ok: #17703a;
+  --ok-bg: #ddf3e4;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181d; --surface: #1d232a; --sunk: #252c34; --ink: #e7eaee; --muted: #9ba5b0; --line: #313942;
+    --accent: #f5c518; --accent-ink: #14181d; --eu: #2c50c4; --plate: #f4f5f2; --plate-ink: #111418;
+    --warn: #ff9a5c; --warn-bg: #3a2216; --amber: #f2c94c; --amber-bg: #352c12; --ok: #5bd68a; --ok-bg: #16301f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181d; --surface: #1d232a; --sunk: #252c34; --ink: #e7eaee; --muted: #9ba5b0; --line: #313942;
+  --accent: #f5c518; --accent-ink: #14181d; --eu: #2c50c4; --plate: #f4f5f2; --plate-ink: #111418;
+  --warn: #ff9a5c; --warn-bg: #3a2216; --amber: #f2c94c; --amber-bg: #352c12; --ok: #5bd68a; --ok-bg: #16301f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 16px/1.45 var(--font-body);
+  -webkit-text-size-adjust: 100%;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--ink); color: var(--bg);
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.top .mark {
+  width: 34px; height: 34px; flex: none; border-radius: 6px;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center;
+  font: 700 22px/1 var(--font-display);
+}
+.top h1 { margin: 0; font: 600 21px/1.1 var(--font-display); letter-spacing: .02em; }
+.top .sub { font-size: 12.5px; opacity: .75; }
+.top .clock { margin-left: auto; text-align: right; font: 600 20px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.top .clock small { display: block; font: 500 11.5px/1.3 var(--font-body); opacity: .75; }
+
+main { max-width: 680px; margin: 0 auto; padding: 16px 16px calc(96px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 22px; }
+.notice { padding: 10px 12px; border-radius: 8px; background: var(--amber-bg); color: var(--amber); font-size: 14px; }
+
+h2 { margin: 0; font: 600 15px/1.2 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.section { display: grid; gap: 12px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+/* Saisie */
+.entry { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 12px; }
+.entry label { font-weight: 600; }
+#plateInput {
+  width: 100%; min-height: 64px; resize: vertical;
+  border: 2px solid var(--line); border-radius: 10px; background: var(--bg);
+  padding: 12px; font: 600 26px/1.2 var(--font-display); letter-spacing: .06em; text-transform: uppercase;
+}
+#plateInput::placeholder { color: var(--muted); opacity: .7; text-transform: none; letter-spacing: .02em; font-weight: 500; font-size: 20px; }
+#plateInput:focus { border-color: var(--accent); outline: none; }
+.hint { font-size: 14px; color: var(--muted); }
+.hint b { color: var(--ink); }
+.btn {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 10px;
+  padding: 10px 14px; font-weight: 600; min-height: 44px;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-size: 17px; flex: 1; }
+.btn.primary:disabled { opacity: .45; cursor: default; }
+.btn.mic { display: inline-flex; gap: 8px; align-items: center; }
+.btn.mic.on { background: var(--warn); color: #fff; border-color: var(--warn); }
+.btn.small { min-height: 36px; padding: 6px 10px; font-size: 14px; }
+.btn.danger { color: var(--warn); }
+.btn.danger.armed { background: var(--warn); border-color: var(--warn); color: #fff; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-wrap { display: inline-flex; align-items: center; gap: 4px; }
+.chip-x { border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; padding: 4px 6px; }
+
+/* Plaque d'immatriculation FR */
+.plate {
+  display: inline-flex; align-items: stretch; height: 34px;
+  border: 2px solid #1a1d22; border-radius: 5px; overflow: hidden;
+  background: var(--plate); color: var(--plate-ink);
+  font: 700 21px/1 var(--font-display); letter-spacing: .05em; white-space: nowrap;
+}
+.plate .eu { background: var(--eu); color: #fff; width: 18px; display: grid; place-items: end center; padding-bottom: 3px; font: 700 10px/1 var(--font-body); }
+.plate .num { display: grid; place-items: center; padding: 0 9px; font-variant-numeric: tabular-nums; }
+.plate.staff { border-color: var(--ok); }
+.plate.lg { height: 46px; font-size: 30px; }
+.plate.lg .eu { width: 24px; font-size: 12px; }
+
+.list { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.item { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.item:first-child { border-top: 0; }
+.item .time { font: 600 18px/1 var(--font-display); font-variant-numeric: tabular-nums; color: var(--muted); width: 44px; }
+.item .meta { min-width: 0; flex: 1; font-size: 14px; color: var(--muted); }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.amber { background: var(--amber-bg); color: var(--amber); }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.mute { background: var(--sunk); color: var(--muted); }
+.empty { padding: 22px 16px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; }
+.empty strong { display: block; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
+
+/* Suivi */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.stat b { display: block; font: 700 30px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12.5px; color: var(--muted); }
+.stat.hot b { color: var(--warn); }
+.seg { display: flex; background: var(--sunk); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { flex: 1; border: 0; background: none; border-radius: 8px; padding: 8px 6px; font-weight: 600; font-size: 14px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.field { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
+select.field { width: auto; }
+.track { cursor: pointer; }
+.track .counts { text-align: right; font-size: 13px; color: var(--muted); }
+.track .counts b { display: block; font: 700 22px/1 var(--font-display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.detail { width: 100%; display: grid; gap: 10px; padding-top: 6px; }
+.cal { display: grid; grid-template-columns: repeat(30, 1fr); gap: 2px; }
+.cal i { display: block; aspect-ratio: 1 / 2; border-radius: 2px; background: var(--sunk); max-width: 100%; }
+.cal i.on { background: var(--accent); }
+.cal i.today { outline: 1px solid var(--muted); }
+.cal-legend { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
+.visits { font-size: 14px; color: var(--muted); display: grid; gap: 2px; max-height: 180px; overflow-y: auto; }
+.visits div { font-variant-numeric: tabular-nums; }
+
+/* Collaborateurs */
+.form { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.form .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form label { display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
+.form label .field { font-weight: 400; }
+#staffPlate { text-transform: uppercase; font: 600 20px/1 var(--font-display); letter-spacing: .05em; }
+.who { min-width: 0; flex: 1; }
+.who b { display: block; }
+.who span { font-size: 13.5px; color: var(--muted); }
+
+/* Onglets */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  background: var(--surface); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tabs button { border: 0; background: none; padding: 10px 4px 12px; display: grid; gap: 3px; justify-items: center; font-size: 13px; font-weight: 600; color: var(--muted); }
+.tabs button svg { width: 24px; height: 24px; }
+.tabs button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 3px 0 var(--accent); }
+.tabs .badge { font-size: 11px; background: var(--warn); color: #fff; border-radius: 999px; padding: 0 6px; margin-left: 4px; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 7;
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600;
+  max-width: calc(100% - 32px); box-shadow: 0 6px 20px rgba(0,0,0,.25);
+}
+.toast button { background: none; border: 0; color: var(--accent); font-weight: 700; margin-left: 10px; }
+@media (max-width: 420px) {
+  .form .two { grid-template-columns: 1fr; }
+  .stat b { font-size: 26px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .item.fresh { animation: flash 1.2s ease-out; }
+  @keyframes flash { from { background: var(--amber-bg); } to { background: transparent; } }
+}
+</style>
+
+<header class="top">
+  <div class="mark" aria-hidden="true">P</div>
+  <div>
+    <h1>Veille Parking</h1>
+    <div class="sub">Intermarché · Gif-sur-Yvette</div>
+  </div>
+  <div class="clock" aria-live="off"><span id="clockTime">--:--</span><small id="clockDate"></small></div>
+</header>
+
+<main>
+  <div class="notice" id="storeNotice" hidden></div>
+
+  <!-- ===== SAISIE ===== -->
+  <section id="tab-saisie" class="section" role="tabpanel" aria-labelledby="t-saisie">
+    <form class="entry" id="entryForm" autocomplete="off">
+      <label for="plateInput">Plaque(s) relevée(s)</label>
+      <textarea id="plateInput" rows="2" placeholder="ex. AB-123-CD" autocapitalize="characters" spellcheck="false" enterkeyhint="done"></textarea>
+      <div class="hint" id="voiceHint">Touchez le <b>micro de votre clavier</b> et dictez les plaques à la suite : « AB 123 CD, EF 456 GH ». Chaque plaque reconnue apparaît ci-dessous.</div>
+      <div class="chips" id="preview" aria-live="polite"></div>
+      <div class="row">
+        <button type="button" class="btn mic" id="micBtn" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <span>Dicter</span>
+        </button>
+        <button type="submit" class="btn primary" id="saveBtn" disabled>Enregistrer</button>
+      </div>
+    </form>
+
+    <div class="row"><h2 id="todayTitle">Relevés du jour</h2><span class="spacer"></span><span class="pill mute" id="todayCount">0</span></div>
+    <div id="todayList"></div>
+  </section>
+
+  <!-- ===== SUIVI ===== -->
+  <section id="tab-suivi" class="section" role="tabpanel" aria-labelledby="t-suivi" hidden>
+    <div class="stats">
+      <div class="stat"><b id="stPlates">0</b><span>plaques suivies</span></div>
+      <div class="stat"><b id="stRecur">0</b><span>récurrentes</span></div>
+      <div class="stat hot"><b id="stVentouse">0</b><span>ventouses</span></div>
+    </div>
+    <div class="seg" role="group" aria-label="Filtre">
+      <button type="button" data-filter="all" aria-pressed="false">Toutes</button>
+      <button type="button" data-filter="recur" aria-pressed="true">Récurrentes</button>
+      <button type="button" data-filter="ventouse" aria-pressed="false">Ventouses</button>
+    </div>
+    <div class="row">
+      <input class="field" id="search" type="search" placeholder="Rechercher une plaque" style="flex:1;min-width:0">
+      <select class="field" id="period" aria-label="Période">
+        <option value="7">7 jours</option>
+        <option value="30" selected>30 jours</option>
+        <option value="90">90 jours</option>
+        <option value="0">Tout</option>
+      </select>
+    </div>
+    <div id="trackList"></div>
+
+    <h2>Réglages</h2>
+    <div class="form">
+      <label>Ventouse à partir de
+        <select class="field" id="threshold">
+          <option value="2">2 jours différents</option>
+          <option value="3">3 jours différents</option>
+          <option value="4">4 jours différents</option>
+          <option value="5">5 jours différents</option>
+          <option value="7">7 jours différents</option>
+        </select>
+      </label>
+      <div class="row">
+        <button type="button" class="btn" id="exportBtn">Exporter les relevés (CSV)</button>
+      </div>
+      <div class="hint">Les véhicules des collaborateurs sont toujours relevés, mais exclus des comptes et du suivi.</div>
+    </div>
+  </section>
+
+  <!-- ===== COLLABORATEURS ===== -->
+  <section id="tab-collab" class="section" role="tabpanel" aria-labelledby="t-collab" hidden>
+    <form class="form" id="staffForm" autocomplete="off">
+      <label>Plaque du collaborateur
+        <input class="field" id="staffPlate" placeholder="AB-123-CD" autocapitalize="characters" spellcheck="false" required>
+      </label>
+      <div class="two">
+        <label>Nom
+          <input class="field" id="staffName" placeholder="ex. Martin Dupont">
+        </label>
+        <label>Rayon / service
+          <input class="field" id="staffDept" placeholder="ex. Boucherie">
+        </label>
+      </div>
+      <button type="submit" class="btn primary">Autoriser cette plaque</button>
+    </form>
+    <div class="row"><h2>Plaques autorisées</h2><span class="spacer"></span><span class="pill ok" id="staffCount">0</span></div>
+    <input class="field" id="staffSearch" type="search" placeholder="Rechercher un nom ou une plaque">
+    <div id="staffList"></div>
+  </section>
+</main>
+
+<nav class="tabs" role="tablist">
+  <button type="button" role="tab" id="t-saisie" aria-controls="tab-saisie" aria-selected="true" data-tab="saisie">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 12h3M11 12h2M15 12h3"/></svg>
+    Saisie
+  </button>
+  <button type="button" role="tab" id="t-suivi" aria-controls="tab-suivi" aria-selected="false" data-tab="suivi">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+    <span>Suivi<span class="badge" id="tabBadge" hidden></span></span>
+  </button>
+  <button type="button" role="tab" id="t-collab" aria-controls="tab-collab" aria-selected="false" data-tab="collab">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M16 11l2 2 4-4"/></svg>
+    Collaborateurs
+  </button>
+</nav>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Outils ---------- */
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pad = (n) => String(n).padStart(2, "0");
+  const dayKey = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const hm = (t) => { const d = new Date(t); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+  const fmtDay = (key, opts) => new Date(key + "T12:00:00").toLocaleDateString("fr-FR", opts || { weekday: "short", day: "numeric", month: "short" });
+  const daysBetween = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
+  const isArtifact = typeof window.claude === "object" && window.claude !== null;
+
+  /* ---------- Plaques ---------- */
+  function formatPlate(p) {
+    if (/^[A-Z]{2}\d{3}[A-Z]{2}$/.test(p)) return p.slice(0, 2) + "-" + p.slice(2, 5) + "-" + p.slice(5);
+    const m = p.match(/^(\d{1,4})([A-Z]{1,3})(\d{2,3}|2A|2B)$/);
+    if (m) return m[1] + " " + m[2] + " " + m[3];
+    return p;
+  }
+  const normalize = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const plateHtml = (p, extra) => '<span class="plate ' + (extra || "") + '"><span class="eu">F</span><span class="num">' + esc(formatPlate(p)) + "</span></span>";
+
+  const DIGITS = { ZERO: "0", UN: "1", UNE: "1", DEUX: "2", TROIS: "3", QUATRE: "4", CINQ: "5", SIX: "6", SEPT: "7", HUIT: "8", NEUF: "9" };
+  const FILLER = /\b(TIRET|TRAIT D UNION|ESPACE|PLAQUE|IMMATRICULATION|IMMATRICULEE|VOITURE|VEHICULE|POINT)\b/g;
+  const SIV = /[A-Z]{2}\d{3}[A-Z]{2}/g;
+  const FNI = /^\d{1,4}[A-Z]{2,3}(\d{2}|2A|2B|97\d)$/;
+
+  // Transforme une saisie (clavier ou dictée) en liste de plaques normalisées.
+  function parsePlates(text) {
+    let s = String(text).normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/['’]/g, " ");
+    s = s.replace(FILLER, " ").replace(/\b(ZERO|UNE?|DEUX|TROIS|QUATRE|CINQ|SIX|SEPT|HUIT|NEUF)\b/g, (w) => DIGITS[w]);
+    const out = [];
+    const condensed = s.replace(/[^A-Z0-9]/g, "");
+    const siv = condensed.match(SIV);
+    if (siv) siv.forEach((p) => out.push(p));
+    else {
+      s.split(/[,;\n.]+|\b(?:ET|PUIS|ENSUITE|SUIVANTE?)\b/).forEach((chunk) => {
+        const c = chunk.replace(/[^A-Z0-9]/g, "");
+        if (!c) return;
+        if (FNI.test(c) || (c.length >= 4 && c.length <= 10 && /\d/.test(c) && /[A-Z]/.test(c))) out.push(c);
+      });
+    }
+    return [...new Set(out)];
+  }
+
+  /* ---------- État ---------- */
+  const state = {
+    days: {},     // "AAAA-MM-JJ" -> [{ p: "AB123CD", t: 1730000000000 }]
+    staff: {},    // "AB123CD" -> { name, dept, added }
+    settings: { threshold: 3 },
+    ready: false,
+  };
+  const ui = { tab: "saisie", filter: "recur", period: 30, open: null, fresh: new Set() };
+
+  /* ---------- Stockage : base partagée de l'artefact, sinon cet appareil ---------- */
+  const LS_KEY = "veille-parking-v1";
+  const store = {
+    mode: "local",
+    db: null,
+    queues: {},
+    loadLocal() {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw) {
+          const d = JSON.parse(raw);
+          state.days = d.days || {};
+          state.staff = d.staff || {};
+          state.settings = Object.assign({ threshold: 3 }, d.settings || {});
+        }
+      } catch (e) { /* stockage indisponible : on garde l'état en mémoire */ }
+    },
+    saveLocal() {
+      try { localStorage.setItem(LS_KEY, JSON.stringify({ days: state.days, staff: state.staff, settings: state.settings })); } catch (e) {}
+    },
+    // Une écriture à la fois par document.
+    enqueue(path, fn) {
+      const q = (this.queues[path] || Promise.resolve()).then(fn).catch((e) => {
+        if (e && e.code === "quota_exceeded") toast("Espace de stockage plein : exportez puis supprimez d'anciens relevés.");
+        else toast("Enregistrement impossible pour le moment. Réessayez.");
+      });
+      this.queues[path] = q;
+      return q;
+    },
+    putDay(key) {
+      if (this.mode === "local") return this.saveLocal();
+      const entries = (state.days[key] || []).slice();
+      const ref = this.db.collection("days").doc(key);
+      return this.enqueue("days/" + key, () => entries.length ? ref.set({ entries }) : ref.delete());
+    },
+    putStaff(plate) {
+      if (this.mode === "local") return this.saveLocal();
+      const v = state.staff[plate];
+      const ref = this.db.collection("staff").doc(plate);
+      return this.enqueue("staff/" + plate, () => v ? ref.set(Object.assign({}, v)) : ref.delete());
+    },
+    putSettings() {
+      if (this.mode === "local") return this.saveLocal();
+      const v = Object.assign({}, state.settings);
+      return this.enqueue("config/settings", () => this.db.doc("config/settings").set(v));
+    },
+    subscribe() {
+      const db = this.db;
+      let got = 0;
+      const done = () => { if (++got >= 2) { state.ready = true; } render(); };
+      const fail = () => showNotice("La connexion aux données a été interrompue. Rechargez la page.");
+      db.collection("days").onSnapshot((snap) => {
+        const days = {};
+        snap.docs.forEach((d) => { const v = d.data(); if (v && Array.isArray(v.entries)) days[d.id] = v.entries.slice(); });
+        state.days = days; done();
+      }, fail);
+      db.collection("staff").onSnapshot((snap) => {
+        const staff = {};
+        snap.docs.forEach((d) => { staff[d.id] = Object.assign({}, d.data()); });
+        state.staff = staff; done();
+      }, fail);
+      db.doc("config/settings").onSnapshot((snap) => {
+        if (snap.exists) state.settings = Object.assign({ threshold: 3 }, snap.data());
+        render();
+      }, () => {});
+    },
+  };
+
+  function showNotice(msg) { const n = $("#storeNotice"); n.textContent = msg; n.hidden = !msg; }
+
+  async function initStore() {
+    if (!isArtifact) {
+      store.loadLocal(); state.ready = true; render(); return;
+    }
+    render();
+    let db = null;
+    try { db = await window.claude.use("db"); } catch (e) { db = null; }
+    if (db) { store.mode = "db"; store.db = db; store.subscribe(); }
+    else {
+      store.loadLocal(); state.ready = true;
+      showNotice("Connectez-vous à claude.ai pour retrouver vos relevés sur tous vos appareils. En attendant, ils restent sur ce téléphone.");
+      render();
+    }
+  }
+
+  /* ---------- Calculs ---------- */
+  function allSightings() {
+    const out = [];
+    Object.keys(state.days).forEach((k) => (state.days[k] || []).forEach((e) => out.push({ day: k, p: e.p, t: e.t })));
+    return out;
+  }
+  function plateStats(periodDays) {
+    const today = dayKey(new Date());
+    const by = {};
+    allSightings().forEach((s) => {
+      if (state.staff[s.p]) return;
+      if (periodDays && daysBetween(s.day, today) >= periodDays) return;
+      const o = by[s.p] || (by[s.p] = { p: s.p, count: 0, days: new Set(), first: s.t, last: s.t, times: [] });
+      o.count++; o.days.add(s.day); o.times.push(s.t);
+      if (s.t < o.first) o.first = s.t;
+      if (s.t > o.last) o.last = s.t;
+    });
+    return Object.values(by).map((o) => {
+      const ds = [...o.days].sort();
+      let best = 1, run = 1;
+      for (let i = 1; i < ds.length; i++) { run = daysBetween(ds[i - 1], ds[i]) === 1 ? run + 1 : 1; best = Math.max(best, run); }
+      o.nDays = ds.length; o.dayList = ds; o.streak = ds.length ? best : 0;
+      o.times.sort((a, b) => b - a);
+      return o;
+    });
+  }
+  function level(o) {
+    if (o.nDays >= state.settings.threshold) return { cls: "warn", label: "Ventouse" };
+    if (o.nDays >= 2) return { cls: "amber", label: "Récurrente" };
+    return { cls: "mute", label: "Ponctuelle" };
+  }
+  function historyFor(p) {
+    const ds = new Set();
+    allSightings().forEach((s) => { if (s.p === p) ds.add(s.day); });
+    return ds;
+  }
+
+  /* ---------- Rendu ---------- */
+  function render() {
+    renderSaisie(); renderSuivi(); renderStaff();
+    $("#threshold").value = String(state.settings.threshold);
+  }
+
+  function renderSaisie() {
+    const key = dayKey(new Date());
+    const entries = (state.days[key] || []).slice().sort((a, b) => b.t - a.t);
+    $("#todayTitle").textContent = "Relevés du " + fmtDay(key, { weekday: "long", day: "numeric", month: "long" });
+    $("#todayCount").textContent = entries.length + (entries.length > 1 ? " relevés" : " relevé");
+    const box = $("#todayList");
+    if (!state.ready) { box.innerHTML = '<div class="empty">Chargement des relevés…</div>'; return; }
+    if (!entries.length) {
+      box.innerHTML = '<div class="empty"><strong>Aucune plaque relevée aujourd\'hui</strong>Dictez ou tapez une plaque ci-dessus : elle sera horodatée à la minute près.</div>';
+      return;
+    }
+    const all = plateStats(0);
+    const map = {}; all.forEach((o) => (map[o.p] = o));
+    box.innerHTML = '<div class="list">' + entries.map((e) => {
+      const staff = state.staff[e.p];
+      let tag;
+      if (staff) tag = '<span class="pill ok">Collaborateur' + (staff.name ? " · " + esc(staff.name) : "") + "</span>";
+      else {
+        const o = map[e.p]; const lv = level(o);
+        tag = '<span class="pill ' + lv.cls + '">' + lv.label + "</span> " + (o.nDays > 1 ? "vue " + o.nDays + " jours" : "1re fois");
+      }
+      return '<div class="item' + (ui.fresh.has(e.t + e.p) ? " fresh" : "") + '"><span class="time">' + hm(e.t) + "</span>" +
+        plateHtml(e.p, staff ? "staff" : "") + '<span class="meta">' + tag + "</span>" +
+        '<button type="button" class="chip-x" data-del="' + e.t + "|" + esc(e.p) + '" aria-label="Supprimer ce relevé">×</button></div>';
+    }).join("") + "</div>";
+    ui.fresh.clear();
+  }
+
+  function renderSuivi() {
+    const stats = plateStats(ui.period);
+    const th = state.settings.threshold;
+    const recur = stats.filter((o) => o.nDays >= 2);
+    const vent = stats.filter((o) => o.nDays >= th);
+    $("#stPlates").textContent = stats.length;
+    $("#stRecur").textContent = recur.length;
+    $("#stVentouse").textContent = vent.length;
+    const badge = $("#tabBadge");
+    badge.textContent = vent.length; badge.hidden = !vent.length;
+    document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === ui.filter)));
+
+    const q = normalize($("#search").value);
+    let list = ui.filter === "ventouse" ? vent : ui.filter === "recur" ? recur : stats;
+    if (q) list = stats.filter((o) => o.p.includes(q));
+    list.sort((a, b) => b.nDays - a.nDays || b.last - a.last);
+
+    const box = $("#trackList");
+    if (!state.ready) { box.innerHTML = '<div class="empty">Chargement…</div>'; return; }
+    if (!list.length) {
+      const why = q ? "Aucune plaque ne correspond à cette recherche sur la période."
+        : ui.filter === "ventouse" ? "Aucun véhicule relevé " + th + " jours différents ou plus sur la période."
+        : ui.filter === "recur" ? "Aucun véhicule relevé plusieurs jours sur la période. Les plaques vues au moins deux jours différents apparaîtront ici."
+        : "Les plaques relevées dans l'onglet Saisie apparaîtront ici, classées par nombre de jours de présence.";
+      box.innerHTML = '<div class="empty"><strong>Rien à signaler</strong>' + why + "</div>";
+      return;
+    }
+    const today = dayKey(new Date());
+    box.innerHTML = '<div class="list">' + list.map((o) => {
+      const lv = level(o);
+      const open = ui.open === o.p;
+      let detail = "";
+      if (open) {
+        const hist = historyFor(o.p);
+        let cal = "";
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          const k = dayKey(d);
+          cal += '<i class="' + (hist.has(k) ? "on" : "") + (k === today ? " today" : "") + '" title="' + fmtDay(k) + '"></i>';
+        }
+        detail = '<div class="detail">' +
+          '<div class="cal" aria-label="Présence sur les 30 derniers jours">' + cal + "</div>" +
+          '<div class="cal-legend"><span>il y a 30 jours</span><span>aujourd\'hui</span></div>' +
+          '<div class="hint">Première fois le ' + new Date(o.first).toLocaleDateString("fr-FR") + " · plus longue série : " + o.streak + " jour" + (o.streak > 1 ? "s" : "") + " d'affilée</div>" +
+          '<div class="visits">' + o.times.map((t) => "<div>" + new Date(t).toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" }) + " à " + hm(t) + "</div>").join("") + "</div>" +
+          '<div class="row"><button type="button" class="btn small" data-tostaff="' + esc(o.p) + '">C\'est un collaborateur</button>' +
+          '<button type="button" class="btn small danger" data-purge="' + esc(o.p) + '">Effacer son historique</button></div>' +
+          "</div>";
+      }
+      return '<div class="item track" data-open="' + esc(o.p) + '" aria-expanded="' + open + '">' + plateHtml(o.p) +
+        '<span class="meta"><span class="pill ' + lv.cls + '">' + lv.label + "</span><br>vue le " + new Date(o.last).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " à " + hm(o.last) + "</span>" +
+        '<span class="counts"><b>' + o.nDays + "</b>jour" + (o.nDays > 1 ? "s" : "") + " · " + o.count + " relevé" + (o.count > 1 ? "s" : "") + "</span>" +
+        detail + "</div>";
+    }).join("") + "</div>";
+  }
+
+  function renderStaff() {
+    const plates = Object.keys(state.staff);
+    $("#staffCount").textContent = plates.length;
+    const q = $("#staffSearch").value.trim().toLowerCase();
+    const nq = normalize(q);
+    const list = plates.filter((p) => {
+      if (!q) return true;
+      const s = state.staff[p];
+      return (nq && p.includes(nq)) || (s.name || "").toLowerCase().includes(q) || (s.dept || "").toLowerCase().includes(q);
+    }).sort((a, b) => (state.staff[a].name || a).localeCompare(state.staff[b].name || b, "fr"));
+    const box = $("#staffList");
+    if (!state.ready) { box.innerHTML = '<div class="empty">Chargement…</div>'; return; }
+    if (!list.length) {
+      box.innerHTML = q ? '<div class="empty">Aucun collaborateur ne correspond.</div>'
+        : '<div class="empty"><strong>Aucune plaque autorisée</strong>Ajoutez ici les véhicules des collaborateurs : ils ne seront plus comptés parmi les voitures qui stationnent.</div>';
+      return;
+    }
+    box.innerHTML = '<div class="list">' + list.map((p) => {
+      const s = state.staff[p];
+      return '<div class="item">' + plateHtml(p, "staff") + '<span class="who"><b>' + esc(s.name || "Collaborateur") + "</b><span>" + esc(s.dept || "") + "</span></span>" +
+        '<button type="button" class="btn small danger" data-unstaff="' + esc(p) + '">Retirer</button></div>';
+    }).join("") + "</div>";
+  }
+
+  /* ---------- Actions ---------- */
+  let toastTimer;
+  function toast(msg, action) {
+    const t = $("#toast");
+    t.innerHTML = esc(msg) + (action ? ' <button type="button" id="toastAct">' + esc(action.label) + "</button>" : "");
+    t.hidden = false;
+    if (action) $("#toastAct").onclick = () => { action.run(); t.hidden = true; };
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (t.hidden = true), action ? 6000 : 3000);
+  }
+
+  function addSightings(plates) {
+    if (!plates.length) return;
+    const now = Date.now();
+    const key = dayKey(new Date(now));
+    const list = state.days[key] || (state.days[key] = []);
+    const added = plates.map((p, i) => ({ p, t: now + i }));
+    added.forEach((e) => { list.push(e); ui.fresh.add(e.t + e.p); });
+    store.putDay(key);
+    render();
+    toast(plates.length + (plates.length > 1 ? " plaques enregistrées à " : " plaque enregistrée à ") + hm(now), {
+      label: "Annuler",
+      run: () => {
+        state.days[key] = (state.days[key] || []).filter((e) => !added.some((a) => a.t === e.t && a.p === e.p));
+        store.putDay(key); render();
+      },
+    });
+  }
+
+  // Aperçu de la saisie
+  let pending = [];
+  function updatePreview() {
+    pending = parsePlates($("#plateInput").value);
+    $("#preview").innerHTML = pending.map((p) => {
+      const s = state.staff[p];
+      return '<span class="chip-wrap">' + plateHtml(p, s ? "staff" : "") + (s ? ' <span class="pill ok">Collab.</span>' : "") +
+        '<button type="button" class="chip-x" data-drop="' + esc(p) + '" aria-label="Retirer">×</button></span>';
+    }).join("");
+    const b = $("#saveBtn");
+    b.disabled = !pending.length;
+    b.textContent = pending.length > 1 ? "Enregistrer " + pending.length + " plaques" : "Enregistrer";
+  }
+  function commitEntry() {
+    if (!pending.length) return;
+    addSightings(pending);
+    $("#plateInput").value = "";
+    updatePreview();
+  }
+
+  $("#plateInput").addEventListener("input", updatePreview);
+  $("#plateInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commitEntry(); }
+  });
+  $("#entryForm").addEventListener("submit", (e) => { e.preventDefault(); commitEntry(); });
+  $("#preview").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-drop]");
+    if (!b) return;
+    const p = b.dataset.drop;
+    const inp = $("#plateInput");
+    inp.value = parsePlates(inp.value).filter((x) => x !== p).map(formatPlate).join(", ");
+    updatePreview();
+  });
+
+  $("#todayList").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-del]");
+    if (!b) return;
+    const [t, p] = b.dataset.del.split("|");
+    const key = dayKey(new Date(+t));
+    const before = (state.days[key] || []).slice();
+    state.days[key] = before.filter((x) => !(String(x.t) === t && x.p === p));
+    store.putDay(key); render();
+    toast(formatPlate(p) + " supprimée", { label: "Annuler", run: () => { state.days[key] = before; store.putDay(key); render(); } });
+  });
+
+  // Dictée intégrée (hors artefact : le navigateur la propose sur Chrome / Safari)
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR && !isArtifact) {
+    const mic = $("#micBtn");
+    mic.hidden = false;
+    $("#voiceHint").innerHTML = "Touchez <b>Dicter</b> et énoncez les plaques à la suite : « AB 123 CD, EF 456 GH ». Vous pouvez aussi utiliser le micro du clavier.";
+    let rec = null;
+    mic.addEventListener("click", () => {
+      if (rec) { rec.stop(); return; }
+      rec = new SR();
+      rec.lang = "fr-FR"; rec.interimResults = true; rec.continuous = true;
+      const base = $("#plateInput").value ? $("#plateInput").value + ", " : "";
+      let finals = "";
+      rec.onresult = (ev) => {
+        let interim = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const r = ev.results[i];
+          if (r.isFinal) finals += r[0].transcript + ", ";
+          else interim += r[0].transcript;
+        }
+        $("#plateInput").value = base + finals + interim;
+        updatePreview();
+      };
+      rec.onerror = (ev) => {
+        if (ev.error === "not-allowed" || ev.error === "service-not-allowed") toast("Micro refusé : autorisez-le dans les réglages du navigateur, ou utilisez le micro du clavier.");
+      };
+      rec.onend = () => { rec = null; mic.classList.remove("on"); mic.querySelector("span").textContent = "Dicter"; };
+      try { rec.start(); mic.classList.add("on"); mic.querySelector("span").textContent = "Arrêter"; }
+      catch (e) { rec = null; }
+    });
+  }
+
+  // Onglets
+  function setTab(name) {
+    ui.tab = name;
+    document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+    ["saisie", "suivi", "collab"].forEach((n) => ($("#tab-" + n).hidden = n !== name));
+    try { localStorage.setItem("veille-parking-tab", name); } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+  document.querySelector(".tabs").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab);
+  });
+
+  // Suivi
+  document.querySelector(".seg").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-filter]"); if (!b) return;
+    ui.filter = b.dataset.filter; renderSuivi();
+  });
+  $("#search").addEventListener("input", renderSuivi);
+  $("#period").addEventListener("change", (e) => { ui.period = +e.target.value; renderSuivi(); });
+  let armed = null;
+  $("#trackList").addEventListener("click", (e) => {
+    const toStaff = e.target.closest("[data-tostaff]");
+    if (toStaff) {
+      setTab("collab");
+      $("#staffPlate").value = formatPlate(toStaff.dataset.tostaff);
+      $("#staffName").focus();
+      return;
+    }
+    const purge = e.target.closest("[data-purge]");
+    if (purge) {
+      const p = purge.dataset.purge;
+      if (armed !== p) {
+        armed = p; purge.classList.add("armed"); purge.textContent = "Confirmer l'effacement";
+        setTimeout(() => { if (armed === p) { armed = null; renderSuivi(); } }, 4000);
+        return;
+      }
+      armed = null;
+      Object.keys(state.days).forEach((k) => {
+        const before = state.days[k];
+        const after = before.filter((x) => x.p !== p);
+        if (after.length !== before.length) { state.days[k] = after; store.putDay(k); }
+      });
+      ui.open = null; render(); toast("Historique de " + formatPlate(p) + " effacé");
+      return;
+    }
+    if (e.target.closest(".detail")) return;
+    const row = e.target.closest("[data-open]");
+    if (row) { ui.open = ui.open === row.dataset.open ? null : row.dataset.open; renderSuivi(); }
+  });
+  $("#threshold").addEventListener("change", (e) => { state.settings.threshold = +e.target.value; store.putSettings(); render(); });
+
+  // Export CSV
+  $("#exportBtn").addEventListener("click", async () => {
+    const rows = [["Date", "Heure", "Plaque", "Collaborateur", "Nom", "Service"]];
+    allSightings().sort((a, b) => a.t - b.t).forEach((s) => {
+      const st = state.staff[s.p];
+      rows.push([new Date(s.t).toLocaleDateString("fr-FR"), hm(s.t), formatPlate(s.p), st ? "oui" : "non", st ? st.name || "" : "", st ? st.dept || "" : ""]);
+    });
+    const csv = "﻿" + rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(";")).join("\r\n");
+    const filename = "releves-parking-" + dayKey(new Date()) + ".csv";
+    if (isArtifact) {
+      let dl = null;
+      try { dl = await window.claude.use("downloads"); } catch (e) {}
+      if (!dl) { toast("Export indisponible sur cet écran."); return; }
+      try { await dl.save({ filename, data: csv }); toast("Export prêt"); }
+      catch (e) { if (!e || e.code !== "declined") toast("L'export n'a pas pu être enregistré."); }
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+
+  // Collaborateurs
+  $("#staffForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const found = parsePlates($("#staffPlate").value);
+    const p = found[0] || normalize($("#staffPlate").value);
+    if (!p || p.length < 4) { toast("Saisissez une plaque valide, ex. AB-123-CD."); return; }
+    state.staff[p] = { name: $("#staffName").value.trim(), dept: $("#staffDept").value.trim(), added: Date.now() };
+    store.putStaff(p);
+    $("#staffPlate").value = ""; $("#staffName").value = ""; $("#staffDept").value = "";
+    if (ui.open === p) ui.open = null;
+    render(); toast(formatPlate(p) + " autorisée");
+  });
+  $("#staffSearch").addEventListener("input", renderStaff);
+  let armedStaff = null;
+  $("#staffList").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-unstaff]"); if (!b) return;
+    const p = b.dataset.unstaff;
+    if (armedStaff !== p) {
+      armedStaff = p; b.classList.add("armed"); b.textContent = "Confirmer";
+      setTimeout(() => { if (armedStaff === p) { armedStaff = null; renderStaff(); } }, 4000);
+      return;
+    }
+    armedStaff = null;
+    delete state.staff[p]; store.putStaff(p); render(); toast(formatPlate(p) + " retirée des collaborateurs");
+  });
+
+  // Horloge : l'heure affichée est celle qui sera enregistrée
+  function tick() {
+    const d = new Date();
+    $("#clockTime").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    $("#clockDate").textContent = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    const k = dayKey(d);
+    if (tick.day && tick.day !== k) render();
+    tick.day = k;
+  }
+  tick(); setInterval(tick, 15000);
+
+  try { const t = localStorage.getItem("veille-parking-tab"); if (t && $("#tab-" + t)) setTab(t); } catch (e) {}
+  window.__parsePlates = parsePlates;
+  initStore();
+})();
+</script>
+<!-- APP END -->
+</body>
+</html>
