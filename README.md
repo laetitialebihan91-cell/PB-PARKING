@@ -13,6 +13,8 @@ voitures « ventouses ».
   90 jours ou depuis le début. Pastilles *Ponctuelle*, *Récurrente*, *Ventouse*
   (seuil réglable), calendrier des 30 derniers jours, historique détaillé.
   Export CSV (ouvrable dans Excel).
+- **Comptage** : nombre de véhicules distincts par jour, collaborateurs exclus
+  (graphique 14, 30 ou 90 jours, nouveaux / déjà vus, export CSV).
 - **Collaborateurs** : plaques autorisées (nom, rayon). Elles restent relevées
   mais sont exclues des comptes et du suivi.
 

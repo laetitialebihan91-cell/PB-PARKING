@@ -53,6 +53,8 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
+main > *, .section > * { min-width: 0; }
 html, body { min-height: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
@@ -178,10 +180,10 @@ select.field { width: auto; }
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
   background: var(--surface); border-top: 1px solid var(--line);
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.tabs button { border: 0; background: none; padding: 10px 4px 12px; display: grid; gap: 3px; justify-items: center; font-size: 13px; font-weight: 600; color: var(--muted); }
+.tabs button { border: 0; background: none; padding: 10px 2px 12px; display: grid; gap: 3px; justify-items: center; font-size: 12.5px; font-weight: 600; color: var(--muted); }
 .tabs button svg { width: 24px; height: 24px; }
 .tabs button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 3px 0 var(--accent); }
 .tabs .badge { font-size: 11px; background: var(--warn); color: #fff; border-radius: 999px; padding: 0 6px; margin-left: 4px; }
@@ -193,6 +195,30 @@ select.field { width: auto; }
   max-width: calc(100% - 32px); box-shadow: 0 6px 20px rgba(0,0,0,.25);
 }
 .toast button { background: none; border: 0; color: var(--accent); font-weight: 700; margin-left: 10px; }
+/* Comptage */
+.chart-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 12px 12px; display: grid; gap: 10px; }
+.readout { min-height: 44px; font-size: 14px; color: var(--muted); }
+.readout b { color: var(--ink); font: 700 26px/1 var(--font-display); font-variant-numeric: tabular-nums; margin-right: 4px; }
+.readout .d { display: block; color: var(--ink); font-weight: 600; }
+.readout .d::first-letter { text-transform: uppercase; }
+#chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+#chart .bar { fill: var(--eu); }
+#chart .bar.dim { opacity: .55; }
+#chart .hit { fill: transparent; cursor: pointer; }
+#chart .grid { stroke: var(--line); stroke-width: 1; }
+#chart .base { stroke: var(--muted); stroke-width: 1; }
+#chart .nodata { fill: var(--line); }
+#chart text { fill: var(--muted); font: 500 11px var(--font-body); font-variant-numeric: tabular-nums; }
+#chart text.val { fill: var(--ink); font-weight: 600; }
+#chart .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2; }
+.tbl-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tbl th, .tbl td { padding: 9px 12px; border-top: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.tbl th { border-top: 0; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.tbl th:first-child, .tbl td:first-child { text-align: left; }
+.tbl td.n { font: 700 19px/1 var(--font-display); }
+.tbl tr[data-day] { cursor: pointer; }
+.tbl tr.sel td { background: var(--amber-bg); }
 @media (max-width: 420px) {
   .form .two { grid-template-columns: 1fr; }
   .stat b { font-size: 26px; }
@@ -276,6 +302,30 @@ select.field { width: auto; }
     </div>
   </section>
 
+  <!-- ===== COMPTAGE ===== -->
+  <section id="tab-comptage" class="section" role="tabpanel" aria-labelledby="t-comptage" hidden>
+    <div class="stats">
+      <div class="stat"><b id="cLast">–</b><span id="cLastLbl">dernier relevé</span></div>
+      <div class="stat"><b id="cAvg">–</b><span>moyenne par jour relevé</span></div>
+      <div class="stat"><b id="cMax">–</b><span id="cMaxLbl">maximum</span></div>
+    </div>
+    <div class="row">
+      <h2>Véhicules par jour</h2><span class="spacer"></span>
+      <select class="field" id="cPeriod" aria-label="Période du graphique">
+        <option value="14">14 jours</option>
+        <option value="30" selected>30 jours</option>
+        <option value="90">90 jours</option>
+      </select>
+    </div>
+    <div class="chart-card">
+      <div class="readout" id="cReadout" aria-live="polite"></div>
+      <div id="chart"></div>
+      <div class="hint">Collaborateurs exclus. Un véhicule relevé plusieurs fois le même jour compte une seule fois. Touchez une barre pour le détail du jour.</div>
+    </div>
+    <div class="row"><h2>Détail par jour</h2><span class="spacer"></span><button type="button" class="btn small" id="exportDaily">Exporter (CSV)</button></div>
+    <div id="countTable"></div>
+  </section>
+
   <!-- ===== COLLABORATEURS ===== -->
   <section id="tab-collab" class="section" role="tabpanel" aria-labelledby="t-collab" hidden>
     <form class="form" id="staffForm" autocomplete="off">
@@ -306,6 +356,10 @@ select.field { width: auto; }
   <button type="button" role="tab" id="t-suivi" aria-controls="tab-suivi" aria-selected="false" data-tab="suivi">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
     <span>Suivi<span class="badge" id="tabBadge" hidden></span></span>
+  </button>
+  <button type="button" role="tab" id="t-comptage" aria-controls="tab-comptage" aria-selected="false" data-tab="comptage">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14h2M14 14h2M8 18h2"/></svg>
+    Comptage
   </button>
   <button type="button" role="tab" id="t-collab" aria-controls="tab-collab" aria-selected="false" data-tab="collab">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M16 11l2 2 4-4"/></svg>
@@ -369,7 +423,7 @@ select.field { width: auto; }
     settings: { threshold: 3 },
     ready: false,
   };
-  const ui = { tab: "saisie", filter: "recur", period: 30, open: null, fresh: new Set() };
+  const ui = { tab: "saisie", filter: "recur", period: 30, open: null, fresh: new Set(), cPeriod: 30, cSel: null };
 
   /* ---------- Stockage : base partagée de l'artefact, sinon cet appareil ---------- */
   const LS_KEY = "veille-parking-v1";
@@ -495,7 +549,7 @@ select.field { width: auto; }
 
   /* ---------- Rendu ---------- */
   function render() {
-    renderSaisie(); renderSuivi(); renderStaff();
+    renderSaisie(); renderSuivi(); renderComptage(); renderStaff();
     $("#threshold").value = String(state.settings.threshold);
   }
 
@@ -581,6 +635,102 @@ select.field { width: auto; }
         '<span class="counts"><b>' + o.nDays + "</b>jour" + (o.nDays > 1 ? "s" : "") + " · " + o.count + " relevé" + (o.count > 1 ? "s" : "") + "</span>" +
         detail + "</div>";
     }).join("") + "</div>";
+  }
+
+  // Comptage journalier : véhicules distincts hors collaborateurs.
+  function dailyCounts() {
+    const firstDay = {};
+    const keys = Object.keys(state.days).filter((k) => (state.days[k] || []).length).sort();
+    const out = {};
+    keys.forEach((k) => {
+      const plates = new Set((state.days[k] || []).map((e) => e.p));
+      let vehicles = 0, staff = 0, fresh = 0;
+      plates.forEach((p) => {
+        if (state.staff[p]) { staff++; return; }
+        vehicles++;
+        if (!firstDay[p]) { firstDay[p] = k; fresh++; }
+      });
+      out[k] = { day: k, vehicles, staff, fresh, seen: vehicles - fresh, entries: state.days[k].length };
+    });
+    return out;
+  }
+
+  function renderComptage() {
+    const box = $("#chart");
+    if (!state.ready) { box.innerHTML = '<div class="empty">Chargement…</div>'; $("#countTable").innerHTML = ""; $("#cReadout").textContent = ""; return; }
+    const counts = dailyCounts();
+    const keys = Object.keys(counts).sort();
+    const N = ui.cPeriod;
+    const range = [];
+    for (let i = N - 1; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); range.push(dayKey(d)); }
+    const inRange = range.filter((k) => counts[k]);
+    const short = (k) => fmtDay(k, { day: "numeric", month: "short" });
+
+    if (inRange.length) {
+      const last = counts[inRange[inRange.length - 1]];
+      const max = inRange.reduce((m, k) => (counts[k].vehicles > m.vehicles ? counts[k] : m), counts[inRange[0]]);
+      const avg = inRange.reduce((s, k) => s + counts[k].vehicles, 0) / inRange.length;
+      $("#cLast").textContent = last.vehicles;
+      $("#cLastLbl").textContent = last.day === dayKey(new Date()) ? "aujourd'hui" : "le " + short(last.day);
+      $("#cAvg").textContent = Math.round(avg);
+      $("#cMax").textContent = max.vehicles;
+      $("#cMaxLbl").textContent = "maximum, le " + short(max.day);
+    } else {
+      ["#cLast", "#cAvg", "#cMax"].forEach((s) => ($(s).textContent = "–"));
+      $("#cLastLbl").textContent = "dernier relevé"; $("#cMaxLbl").textContent = "maximum";
+    }
+
+    if (!ui.cSel || !counts[ui.cSel] || !range.includes(ui.cSel)) ui.cSel = inRange[inRange.length - 1] || null;
+    const sel = ui.cSel && counts[ui.cSel];
+    $("#cReadout").innerHTML = sel
+      ? '<span class="d">' + fmtDay(sel.day, { weekday: "long", day: "numeric", month: "long" }) + "</span><b>" + sel.vehicles + "</b>véhicule" + (sel.vehicles > 1 ? "s" : "") +
+        " · " + sel.fresh + " nouveau" + (sel.fresh > 1 ? "x" : "") + ", " + sel.seen + " déjà vu" + (sel.seen > 1 ? "s" : "") +
+        (sel.staff ? " · " + sel.staff + " collaborateur" + (sel.staff > 1 ? "s" : "") + " exclu" + (sel.staff > 1 ? "s" : "") : "")
+      : "Aucun relevé sur la période.";
+
+    // Graphique en barres, une barre par jour
+    const W = Math.max(280, Math.round(box.clientWidth || 340)), H = 190;
+    const m = { l: 30, r: 4, t: 18, b: 22 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const top = inRange.length ? Math.max(...inRange.map((k) => counts[k].vehicles)) : 0;
+    const step = top <= 10 ? 5 : top <= 50 ? 10 : top <= 100 ? 20 : 50;
+    const yMax = Math.max(step, Math.ceil(top / step) * step);
+    const y = (v) => m.t + ih - (v / yMax) * ih;
+    const slot = iw / N, gap = Math.min(2, slot * 0.25), bw = Math.max(1, slot - gap);
+    let g = "";
+    for (let v = 0; v <= yMax; v += step) {
+      if (v > 0) g += '<line class="grid" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>';
+      g += '<text x="' + (m.l - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + "</text>";
+    }
+    const labelEvery = N <= 14 ? 1 : N <= 30 ? 5 : 15;
+    const showVals = N <= 14;
+    let bars = "";
+    range.forEach((k, i) => {
+      const x = m.l + i * slot + gap / 2;
+      const c = counts[k];
+      const cx = x + bw / 2;
+      if (c) {
+        const h = Math.max(2, ih - (y(c.vehicles) - m.t));
+        const yy = m.t + ih - h, r = Math.min(4, bw / 2, h);
+        bars += '<path class="bar' + (ui.cSel !== k ? " dim" : "") + '" d="M' + x + "," + (m.t + ih) + "V" + (yy + r) + "Q" + x + "," + yy + " " + (x + r) + "," + yy +
+          "H" + (x + bw - r) + "Q" + (x + bw) + "," + yy + " " + (x + bw) + "," + (yy + r) + "V" + (m.t + ih) + 'Z"/>';
+        if (showVals || ui.cSel === k) bars += '<text class="val" x="' + cx + '" y="' + (yy - 5) + '" text-anchor="middle">' + c.vehicles + "</text>";
+      } else {
+        bars += '<circle class="nodata" cx="' + cx + '" cy="' + (m.t + ih - 3) + '" r="' + Math.min(2.5, bw / 2) + '"/>';
+      }
+      if ((N - 1 - i) % labelEvery === 0) bars += '<text x="' + cx + '" y="' + (H - 6) + '" text-anchor="middle">' + new Date(k + "T12:00:00").getDate() + "</text>";
+      bars += '<rect class="hit" data-day="' + k + '" x="' + (m.l + i * slot) + '" y="' + m.t + '" width="' + slot + '" height="' + (ih + m.b) + '"><title>' +
+        fmtDay(k) + (c ? " : " + c.vehicles + " véhicules" : " : pas de relevé") + "</title></rect>";
+    });
+    box.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Nombre de véhicules par jour, collaborateurs exclus, sur ' + N + ' jours">' +
+      g + '<line class="base" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + (m.t + ih) + '" y2="' + (m.t + ih) + '"/>' + bars + "</svg>";
+
+    const rows = keys.slice().reverse();
+    $("#countTable").innerHTML = rows.length
+      ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jour</th><th>Véhicules</th><th>Nouveaux</th><th>Déjà vus</th><th>Collab.</th></tr></thead><tbody>' +
+        rows.map((k) => { const c = counts[k]; return '<tr data-day="' + k + '"' + (k === ui.cSel ? ' class="sel"' : "") + "><td>" + fmtDay(k) + '</td><td class="n">' + c.vehicles + "</td><td>" + c.fresh + "</td><td>" + c.seen + "</td><td>" + c.staff + "</td></tr>"; }).join("") +
+        "</tbody></table></div>"
+      : '<div class="empty"><strong>Pas encore de comptage</strong>Chaque jour où vous relevez des plaques apparaîtra ici avec le nombre de véhicules hors collaborateurs.</div>';
   }
 
   function renderStaff() {
@@ -717,9 +867,10 @@ select.field { width: auto; }
   function setTab(name) {
     ui.tab = name;
     document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
-    ["saisie", "suivi", "collab"].forEach((n) => ($("#tab-" + n).hidden = n !== name));
+    ["saisie", "suivi", "comptage", "collab"].forEach((n) => ($("#tab-" + n).hidden = n !== name));
     try { localStorage.setItem("veille-parking-tab", name); } catch (e) {}
     window.scrollTo(0, 0);
+    if (name === "comptage") renderComptage();
   }
   document.querySelector(".tabs").addEventListener("click", (e) => {
     const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab);
@@ -771,8 +922,10 @@ select.field { width: auto; }
       const st = state.staff[s.p];
       rows.push([new Date(s.t).toLocaleDateString("fr-FR"), hm(s.t), formatPlate(s.p), st ? "oui" : "non", st ? st.name || "" : "", st ? st.dept || "" : ""]);
     });
-    const csv = "﻿" + rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(";")).join("\r\n");
-    const filename = "releves-parking-" + dayKey(new Date()) + ".csv";
+    saveCsv(rows, "releves-parking-" + dayKey(new Date()) + ".csv");
+  });
+  async function saveCsv(rows, filename) {
+    const csv = "\ufeff" + rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(";")).join("\r\n");
     if (isArtifact) {
       let dl = null;
       try { dl = await window.claude.use("downloads"); } catch (e) {}
@@ -785,6 +938,22 @@ select.field { width: auto; }
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     a.download = filename; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  // Comptage
+  $("#cPeriod").addEventListener("change", (e) => { ui.cPeriod = +e.target.value; renderComptage(); });
+  function pickDay(e) {
+    const t = e.target.closest("[data-day]"); if (!t) return;
+    if (dailyCounts()[t.dataset.day]) { ui.cSel = t.dataset.day; renderComptage(); }
+  }
+  $("#chart").addEventListener("click", pickDay);
+  $("#countTable").addEventListener("click", pickDay);
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (ui.tab === "comptage") renderComptage(); }, 150); });
+  $("#exportDaily").addEventListener("click", () => {
+    const counts = dailyCounts();
+    const rows = [["Date", "Véhicules (hors collaborateurs)", "Nouveaux", "Déjà vus", "Collaborateurs exclus", "Relevés"]];
+    Object.keys(counts).sort().forEach((k) => { const c = counts[k]; rows.push([new Date(k + "T12:00:00").toLocaleDateString("fr-FR"), c.vehicles, c.fresh, c.seen, c.staff, c.entries]); });
+    saveCsv(rows, "comptage-parking-" + dayKey(new Date()) + ".csv");
   });
 
   // Collaborateurs
